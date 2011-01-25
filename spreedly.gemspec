@@ -5,7 +5,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{spreedly}
-  s.version = "1.3.4"
+  s.version = "1.4.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Delano Mandelbaum"]
@@ -31,6 +31,7 @@ Gem::Specification.new do |s|
      "lib/spreedly/mock.rb",
      "lib/spreedly/test_hacks.rb",
      "lib/spreedly/version.rb",
+     "spreedly.gemspec",
      "test/spreedly_gem_test.rb",
      "test/test_site.example.yml"
   ]
