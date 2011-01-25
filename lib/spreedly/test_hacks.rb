@@ -18,7 +18,7 @@ module Spreedly
       form['credit_card[month]'] = '1'
       form['credit_card[year]'] = '2024'
       page = form.click_button
-      raise "Subscription didn't got through" unless page.title == "Thank you!"
+      raise Spreedly::Error, Spreedly::Error "Subscription didn't got through" unless page.title == "Thank you!"
     end
   end
 end

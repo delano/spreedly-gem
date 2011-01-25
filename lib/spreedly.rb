@@ -31,7 +31,9 @@ so we can improve it. Thanks!
 
 module Spreedly
   REAL = "real" # :nodoc:
-
+  
+  class Error < RuntimeError; end 
+  
   include HTTParty
   headers 'Accept' => 'text/xml'
   headers 'Content-Type' => 'text/xml'
@@ -41,7 +43,7 @@ module Spreedly
   def self.configure(site_name, token)
     base_uri "https://spreedly.com/api/v4/#{site_name}"
     basic_auth token, 'X'
-    debug_output $stderr
+    #debug_output $stderr
     @site_name = site_name
   end
   
@@ -117,12 +119,12 @@ module Spreedly
       when /2../
         new(result['subscriber'])
       when '403'
-        raise "Could not create subscriber: already exists."
+        raise Spreedly::Error, "Could not create subscriber: already exists."
       when '422'
         errors = [*result['errors']].collect{|e| e.last}
-        raise "Could not create subscriber: #{errors.join(', ')}"
+        raise Spreedly::Error, "Could not create subscriber: #{errors.join(', ')}"
       else
-        raise "Could not create subscriber: result code #{result.code}."
+        raise Spreedly::Error, "Could not create subscriber: result code #{result.code}."
       end
     end
     
@@ -153,19 +155,19 @@ module Spreedly
     def comp(quantity, units, feature_level=nil)
       params = {:duration_quantity => quantity, :duration_units => units}
       params[:feature_level] = feature_level if feature_level
-      raise "Feature level is required to comp an inactive subscriber" if !active? and !feature_level
+      raise Spreedly::Error, "Feature level is required to comp an inactive subscriber" if !active? and !feature_level
       endpoint = (active? ? "complimentary_time_extensions" : "complimentary_subscriptions")
       result = Spreedly.post("/subscribers/#{id}/#{endpoint}.xml", :body => Spreedly.to_xml_params(endpoint[0..-2] => params))
       case result.code.to_s
       when /2../
       when '404'
-        raise "Could not comp subscriber: no longer exists."
+        raise Spreedly::Error, "Could not comp subscriber: no longer exists."
       when '422'
-        raise "Could not comp subscriber: validation failed (#{result.body})."
+        raise Spreedly::Error, "Could not comp subscriber: validation failed (#{result.body})."
       when '403'
-        raise "Could not comp subscriber: invalid comp type (#{endpoint})."
+        raise Spreedly::Error, "Could not comp subscriber: invalid comp type (#{endpoint})."
       else
-        raise "Could not comp subscriber: result code #{result.code}."
+        raise Spreedly::Error, "Could not comp subscriber: result code #{result.code}."
       end
     end
     
@@ -177,13 +179,13 @@ module Spreedly
       case result.code.to_s
       when /2../
       when '404'
-        raise "Could not active free trial for subscriber: subscriber or subscription plan no longer exists."
+        raise Spreedly::Error, "Could not active free trial for subscriber: subscriber or subscription plan no longer exists."
       when '422'
-        raise "Could not activate free trial for subscriber: validation failed. missing subscription plan id"
+        raise Spreedly::Error, "Could not activate free trial for subscriber: validation failed. missing subscription plan id"
       when '403'
-        raise "Could not activate free trial for subscriber: subscription plan either 1) isn't a free trial, 2) the subscriber is not eligible for a free trial, or 3) the subscription plan is not enabled."
+        raise Spreedly::Error, "Could not activate free trial for subscriber: subscription plan either 1) isn't a free trial, 2) the subscriber is not eligible for a free trial, or 3) the subscription plan is not enabled."
       else
-        raise "Could not activate free trial for subscriber: result code #{result.code}."
+        raise Spreedly::Error, "Could not activate free trial for subscriber: result code #{result.code}."
       end
     end
     
@@ -194,9 +196,9 @@ module Spreedly
       case result.code.to_s
       when /2../
       when '404'
-        raise "Could not stop auto renew for subscriber: subscriber does not exist."
+        raise Spreedly::Error, "Could not stop auto renew for subscriber: subscriber does not exist."
       else
-        raise "Could not stop auto renew for subscriber: result code #{result.code}."
+        raise Spreedly::Error, "Could not stop auto renew for subscriber: result code #{result.code}."
       end
     end
     
@@ -210,11 +212,11 @@ module Spreedly
       case result.code.to_s
       when /2../
       when '403'
-        raise "Could not update subscriber: new-customer-id is already in use."
+        raise Spreedly::Error, "Could not update subscriber: new-customer-id is already in use."
       when '404'
-        raise "Could not update subscriber: subscriber not found"
+        raise Spreedly::Error, "Could not update subscriber: subscriber not found"
       else
-        raise "Could not update subscriber: result code #{result.code}."
+        raise Spreedly::Error, "Could not update subscriber: result code #{result.code}."
       end
     end
 
@@ -227,7 +229,7 @@ module Spreedly
       case result.code.to_s
       when /2../
       else
-        raise "Could not allow subscriber to another trial: result code #{result.code}."
+        raise Spreedly::Error, "Could not allow subscriber to another trial: result code #{result.code}."
       end
     end
 
@@ -240,11 +242,11 @@ module Spreedly
       case result.code.to_s
       when /2../
       when '404'
-        raise "Not Found"
+        raise Spreedly::Error, "Not Found"
       when '422'
-        raise "Unprocessable Entity - #{result.body}"
+        raise Spreedly::Error, "Unprocessable Entity - #{result.body}"
       else
-        raise "Could not add fee to subscriber: result code #{result.code}."
+        raise Spreedly::Error, "Could not add fee to subscriber: result code #{result.code}."
       end
     end
   
@@ -290,12 +292,12 @@ module Spreedly
       when /2../
         new(result['invoice'])
       when '403'
-        raise "Could not create invoice: already exists."
+        raise Spreedly::Error, "Could not create invoice: already exists."
       when '422'
         errors = [*result['errors']].collect{|e| e.last}
-        raise "Could not create invoice: #{errors.join(', ')}"
+        raise Spreedly::Error, "Could not create invoice: #{errors.join(', ')}"
       else
-        raise "Could not create invoice: result code #{result.code}."
+        raise Spreedly::Error, "Could not create invoice: result code #{result.code}."
       end
     end
     
@@ -309,14 +311,14 @@ module Spreedly
       when /2../
         self.class.new(result['invoice'])
       when '403'
-        raise "Could not make payment: subscription is disabled."
+        raise Spreedly::Error, "Could not make payment: subscription is disabled."
       when '422'
         errors = [*result['errors']].collect{|e| e.last}
-        raise "Could not make payment: #{errors.join(', ')}"
+        raise Spreedly::Error, "Could not make payment: #{errors.join(', ')}"
       when '504'
-        raise "Could not make payment: Gateway Timeout"
+        raise Spreedly::Error, "Could not make payment: Gateway Timeout"
       else
-        raise "Could not make payment: result code #{result.code}."
+        raise Spreedly::Error, "Could not make payment: result code #{result.code}."
       end
     end
     
