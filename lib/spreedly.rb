@@ -41,7 +41,7 @@ module Spreedly
   def self.configure(site_name, token)
     base_uri "https://spreedly.com/api/v4/#{site_name}"
     basic_auth token, 'X'
-    #debug_output $stderr
+    debug_output $stderr
     @site_name = site_name
   end
   
@@ -298,5 +298,36 @@ module Spreedly
         raise "Could not create invoice: result code #{result.code}."
       end
     end
+    
+    def pay!(payment)
+      opts = {
+        :account_type => 'credit-card',
+        :credit_card => payment
+      }
+      result = Spreedly.put("/invoices/#{token}/pay.xml", :body => Spreedly.to_xml_params(:payment => opts))
+      case result.code.to_s
+      when /2../
+        self.class.new(result['invoice'])
+      when '403'
+        raise "Could not make payment: subscription is disabled."
+      when '422'
+        errors = [*result['errors']].collect{|e| e.last}
+        raise "Could not make payment: #{errors.join(', ')}"
+      when '504'
+        raise "Could not make payment: Gateway Timeout"
+      else
+        raise "Could not make payment: result code #{result.code}."
+      end
+    end
+    
   end
+  
+  module PaymentMethod
+    class CreditCard < Resource
+      def self.type
+        
+      end
+    end
+  end
+  
 end
