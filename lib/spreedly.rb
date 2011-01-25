@@ -66,7 +66,7 @@ module Spreedly
   end
   
   class Resource # :nodoc: all
-    attr_reader :errors
+    attr_reader :errors, :data
     def initialize(data)
       @data = data
     end
