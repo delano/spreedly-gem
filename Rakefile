@@ -1,72 +1,62 @@
-require 'hoe'
-require './lib/spreedly/version.rb'
+require "rubygems"
+require "rake"
+require "rake/clean"
+require 'yaml'
 
-ENV["COPYFILE_DISABLE"] = "true" # Lose all the fugly ._ files when tar'ing
-
-hoe = Hoe.spec('spreedly') do
-  developer('Nathaniel Talbott', 'nathaniel@terralien.com')
-  self.rubyforge_name = 'terralien'
-  self.test_globs = ["test/**/*_test.rb"]
-  self.extra_deps << ["mechanize"]
-  self.extra_dev_deps << ["shoulda"]
-end
-
-def remove_task(*task_names)
-  task_names.each do |task_name|
-    Rake.application.instance_eval{@tasks.delete(task_name.to_s)}
-  end
+begin
+  require 'hanna/rdoctask'
+rescue LoadError
+  require 'rake/rdoctask'
 end
  
-def replace_task(task_name, *args, &block)
-  name = (task_name.is_a?(Hash) ? task_name.keys.first : task_name)
-  remove_task(name)
-  task(task_name, *args, &block)
+config = YAML.load_file("VERSION.yml")
+task :default => ["build"]
+CLEAN.include [ 'pkg', 'doc' ]
+name = "spreedly"
+
+begin
+  require "jeweler"
+  Jeweler::Tasks.new do |gem|
+    gem.version = "#{config[:MAJOR]}.#{config[:MINOR]}.#{config[:PATCH]}"
+    gem.name = name
+    gem.rubyforge_project = gem.name
+    gem.summary = "A library for Spreedly (the payment service) based on Terralien's lib by Nathaniel Talbott"
+    gem.description = gem.summary
+    gem.email = "delano@solutious.com"
+    gem.homepage = "http://github.com/delano/spreedly-gem"
+    gem.authors = ["Delano Mandelbaum"]
+    gem.add_dependency("httparty")
+  end
+  Jeweler::GemcutterTasks.new
+rescue LoadError
+  puts "Jeweler (or a dependency) not available. Install it with: sudo gem install jeweler"
 end
 
-remove_task :docs, 'doc/index.html'
-Rake::RDocTask.new(:docs) do |rd|
-  rd.main = hoe.readme_file
-  rd.rdoc_dir = 'doc'
 
-  rd.rdoc_files += ['lib/spreedly.rb', 'lib/spreedly/common.rb', hoe.readme_file]
-
-  title = "Terralien's Spreedly Gem (#{hoe.version}) Documentation"
-
-  rd.options << "-t" << title << "-f" << "darkfish"
+Rake::RDocTask.new do |rdoc|
+  version = "#{config[:MAJOR]}.#{config[:MINOR]}.#{config[:PATCH]}"
+  rdoc.rdoc_dir = "doc"
+  rdoc.title = "#{name} #{version}"
+  rdoc.rdoc_files.include("README*")
+  rdoc.rdoc_files.include("lib/**/*.rb")
 end
 
-desc "Publish documentation."
-replace_task :publish_docs => [:clean, :docs] do
-  host = "terralien@terralien.com"
 
-  remote_dir = "/var/www/terralien/www/shared/static/projects/spreedly-gem"
-  local_dir = 'doc'
+# Rubyforge Release / Publish Tasks ==================================
 
-  sh %{rsync #{hoe.rsync_args} #{local_dir}/ #{host}:#{remote_dir}}
+#about 'Publish website to rubyforge'
+task 'publish:rdoc' => 'doc/index.html' do
+  #sh "scp -rp doc/* rubyforge.org:/var/www/gforge-projects/#{name}/"
 end
 
-desc "Run tests with and without mocking."
-replace_task :test do
-  ruby hoe.make_test_cmd
-
-  ENV["SPREEDLY_TEST"] = "REAL"
-  ruby hoe.make_test_cmd
+#about 'Public release to rubyforge'
+task 'publish:gem' => [:package] do |t|
+  sh <<-end
+    rubyforge add_release -o Any -a History.txt -f -n README.txt #{name} #{name} #{@spec.version} pkg/#{name}-#{@spec.version}.gem &&
+    rubyforge add_file -o Any -a History.txt -f -n README.txt #{name} #{name} #{@spec.version} pkg/#{name}-#{@spec.version}.tgz 
+  end
 end
 
-desc "Run only mock tests."
-task :test_mock do
-  ruby hoe.make_test_cmd
-end
 
-desc "Run only real tests."
-task :test_real do
-  ENV["SPREEDLY_TEST"] = "REAL"
-  ruby hoe.make_test_cmd
-end
 
-desc "Run both sets of tests under multiruby"
-replace_task :multi do
-  ruby hoe.make_test_cmd(:multi)
-  ENV["SPREEDLY_TEST"] = "REAL"
-  ruby hoe.make_test_cmd(:multi)
-end
+
