@@ -1,3 +1,10 @@
+=== 1.4.0
+* Removed vendor/httparty
+* Spreedly::Subscriber.all fix for when there are no subscribers
+* Use jeweler in Rakefile
+* Add Spreedly::Invoice
+* Raise Spreedly::Error instead of generic RuntimeError
+
 === 1.3.4
 * Add result body to comp validation failure. [ntalbott]
 
