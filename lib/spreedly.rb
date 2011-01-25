@@ -172,6 +172,23 @@ module Spreedly
       end
     end
     
+    def lifetime_comp(feature_level)
+      params = {:feature_level => feature_level }
+      endpoint = 'lifetime_complimentary_subscriptions'
+      result = Spreedly.post("/subscribers/#{id}/#{endpoint}.xml", :body => Spreedly.to_xml_params(endpoint[0..-2] => params))
+      case result.code.to_s
+      when /2../
+      when '404'
+        raise Spreedly::Error, "Could not comp subscriber: no longer exists."
+      when '422'
+        raise Spreedly::Error, "Could not comp subscriber: validation failed (#{result.body})."
+      when '403'
+        raise Spreedly::Error, "Could not comp subscriber: invalid comp type (#{endpoint})."
+      else
+        raise Spreedly::Error, "Could not comp subscriber: result code #{result.code}."
+      end
+    end
+    
     # Activates a free trial on the subscriber.
     # Requires plan_id of the free trial plan
     def activate_free_trial(plan_id)

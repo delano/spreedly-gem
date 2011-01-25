@@ -4,6 +4,7 @@
 * Use jeweler in Rakefile
 * Add Spreedly::Invoice
 * Raise Spreedly::Error instead of generic RuntimeError
+* Add support for lifetime_comp
 
 === 1.3.4
 * Add result body to comp validation failure. [ntalbott]
