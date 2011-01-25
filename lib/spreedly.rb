@@ -66,6 +66,7 @@ module Spreedly
   end
   
   class Resource # :nodoc: all
+    attr_reader :errors
     def initialize(data)
       @data = data
     end
@@ -121,7 +122,7 @@ module Spreedly
       when '403'
         raise Spreedly::Error, "Could not create subscriber: already exists."
       when '422'
-        errors = [*result['errors']].collect{|e| e.last}
+        @errors = [*result['errors']].collect{|e| e.last}
         raise Spreedly::Error, "Could not create subscriber: #{errors.join(', ')}"
       else
         raise Spreedly::Error, "Could not create subscriber: result code #{result.code}."
@@ -294,7 +295,7 @@ module Spreedly
       when '403'
         raise Spreedly::Error, "Could not create invoice: already exists."
       when '422'
-        errors = [*result['errors']].collect{|e| e.last}
+        @errors = [*result['errors']].collect{|e| e.last}
         raise Spreedly::Error, "Could not create invoice: #{errors.join(', ')}"
       else
         raise Spreedly::Error, "Could not create invoice: result code #{result.code}."
@@ -311,9 +312,9 @@ module Spreedly
       when /2../
         self.class.new(result['invoice'])
       when '403'
-        raise Spreedly::Error, "Could not make payment: subscription is disabled."
+        raise Spreedly::Error, "Could not make payment: required information is missing or otherwise fails verification."
       when '422'
-        errors = [*result['errors']].collect{|e| e.last}
+        @errors = [*result['errors']].collect{|e| e.last}
         raise Spreedly::Error, "Could not make payment: #{errors.join(', ')}"
       when '504'
         raise Spreedly::Error, "Could not make payment: Gateway Timeout"
