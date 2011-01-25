@@ -41,6 +41,7 @@ module Spreedly
   def self.configure(site_name, token)
     base_uri "https://spreedly.com/api/v4/#{site_name}"
     basic_auth token, 'X'
+    #debug_output $stderr
     @site_name = site_name
   end
   
@@ -103,10 +104,10 @@ module Spreedly
     # to happen.
     #
     # Usage:
-    #   Spreedly.Subscriber.create!(id, email)
-    #   Spreedly.Subscriber.create!(id, email, screen_name)
-    #   Spreedly.Subscriber.create!(id, :email => email, :screen_name => screen_name)
-    #   Spreedly.Subscriber.create!(id, email, screen_name, :billing_first_name => first_name)
+    #   Spreedly::Subscriber.create!(id, email)
+    #   Spreedly::Subscriber.create!(id, email, screen_name)
+    #   Spreedly::Subscriber.create!(id, :email => email, :screen_name => screen_name)
+    #   Spreedly::Subscriber.create!(id, email, screen_name, :billing_first_name => first_name)
     def self.create!(id, *args)      
       optional_attrs = args.last.is_a?(::Hash) ? args.pop : {}
       email, screen_name = args
@@ -265,6 +266,37 @@ module Spreedly
     # Convenience method for determining if this plan is a free trial plan or not.
     def trial?
       (plan_type == 'free_trial')
+    end
+  end
+  
+  class Invoice < Resource
+    # Creates a new subscriber on Spreedly. The subscriber will NOT
+    # be active - they have to pay or you have to comp them for that
+    # to happen.
+    #
+    # Usage:
+    #   Spreedly::Invoice.create!(:subscription_plan_id => @model_a.id, :subscriber => @sub)
+    def self.create!(subscriber, plan_id)
+      opts = {
+        :subscription_plan_id => plan_id, 
+        :subscriber => {
+          :customer_id => subscriber.id,
+          :screen_name => subscriber.screen_name,
+          :email => subscriber.email
+        }
+      }
+      result = Spreedly.post('/invoices.xml', :body => Spreedly.to_xml_params(:invoice => opts))
+      case result.code.to_s
+      when /2../
+        new(result['invoice'])
+      when '403'
+        raise "Could not create invoice: already exists."
+      when '422'
+        errors = [*result['errors']].collect{|e| e.last}
+        raise "Could not create invoice: #{errors.join(', ')}"
+      else
+        raise "Could not create invoice: result code #{result.code}."
+      end
     end
   end
 end
