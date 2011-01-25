@@ -133,7 +133,7 @@ module Spreedly
     
     # Returns all the subscribers in your site.
     def self.all
-      Spreedly.get('/subscribers.xml')['subscribers'].collect{|data| new(data)}
+      (Spreedly.get('/subscribers.xml')['subscribers'] || []).collect{|data| new(data)}
     end
     
     # Spreedly calls your id for the user the "customer id". This
